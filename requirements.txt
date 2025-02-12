@@ -1,0 +1,39 @@
+# Core AI and LangChain dependencies
+langchain
+langchain_community
+langgraph
+langchain-aws
+
+# Retrieval and vector database
+chromadb
+
+# Tokenizer for efficient text processing
+tiktoken
+
+# Web search integration
+tavily-python
+
+# Reddit API wrapper
+praw
+
+# AWS SDK for Python (Required for Bedrock & other AWS integrations)
+boto3
+
+# PDF Processing (If needed for document parsing)
+pdfplumber
+
+# OpenAI SDK (Specific version required)
+openai==0.28
+
+# Streamlit (For UI)
+streamlit
+
+# Datapane (For visualization and reporting)
+datapane
+
+# Linting and Code Formatting (Optional but recommended)
+flake8
+black
+
+# Security Scanner
+bandit
