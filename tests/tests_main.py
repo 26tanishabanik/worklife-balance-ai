@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
-from llm import GuardrailChecker, OpinionQuantifier
-from monitoring import Monitoring
+from src.llm import GuardrailChecker, OpinionQuantifier
+from src.monitoring import Monitoring
 
 
 class TestGuardrailChecker(unittest.TestCase):

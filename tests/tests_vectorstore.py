@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from vectorstore import RAGVectorStore
+from src.vectorstore import RAGVectorStore
 
 
 class TestRAGVectorStore(unittest.TestCase):
