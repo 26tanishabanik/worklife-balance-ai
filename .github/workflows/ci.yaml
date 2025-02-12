@@ -1,0 +1,55 @@
+name: CI/CD Pipeline for Streamlit Deployment
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚀 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🔍 Run Linting (flake8)
+        run: |
+          pip install flake8
+          flake8 . --count --show-source --statistics
+
+      - name: 🧪 Run Tests
+        run: |
+          python -m unittest discover -s tests
+
+  docker-build-push:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - name: 🚀 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Set Up Docker Build
+        uses: docker/setup-buildx-action@v2
+
+      - name: 🔑 Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 📦 Build & Push Docker Image
+        run: |
+          docker build -t 26tanishabanik/worklife-balance-ai .
+          docker push 26tanishabanik/worklife-balance-ai
