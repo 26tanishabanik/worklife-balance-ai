@@ -1,12 +1,11 @@
 import os
 import logging
-import streamlit as st
 import praw
 import boto3
 from src.monitoring import Monitoring
 from src.llm import OpinionQuantifier, GuardrailChecker
 from dotenv import load_dotenv
-
+from src.vectorstore import RAGVectorStore
 
 load_dotenv()
 # -----------------------------------------------------------------------------
@@ -43,22 +42,19 @@ REDDIT_CLIENT = praw.Reddit(
 monitoring = Monitoring()
 opinion_quantifier = OpinionQuantifier(BEDROCK_CLIENT, monitoring, llm_model_id)
 guardrail_checker = GuardrailChecker(BEDROCK_CLIENT, monitoring, guardrail_id, guardrail_version)
-vector_store = RAGVectorStore(BEDROCK_CLIENT, AWS_REGION, embedding_model_id)
+vector_store = RAGVectorStore(BEDROCK_CLIENT, aws_region, embedding_model_id)
 
-# Streamlit UI
-st.title("Work-Life Balance Analyzer")
+
+print("Work-Life Balance Analyzer")
 
 subreddit_name = "all"
 query = "work life balance"
-limit = st.slider("Number of posts", min_value=1, max_value=50, value=10)
-if st.button("Run Analysis"):
-    with st.spinner("Fetching posts..."):
-        subreddit = REDDIT_CLIENT.subreddit(subreddit_name)
-        posts = {sub.id: f"{sub.title}\n{sub.selftext}" for sub in subreddit.search(query, limit=limit)}
-
-    retriever = vector_store.build_vector_store(posts)
-    question = st.text_input("Query", value="along with work you should try to spend quality time with your parents")
-    doc_txt = retriever.invoke(question)[0].page_content
-
-    if guardrail_checker.apply_guardrail(question)["action"] != "GUARDRAIL_INTERVENED":
-        st.json(opinion_quantifier.quantify_opinion(question, doc_txt))
+limit = 1000
+print("Fetching posts...")
+subreddit = REDDIT_CLIENT.subreddit(subreddit_name)
+posts = {sub.id: f"{sub.title}\n{sub.selftext}" for sub in subreddit.search(query, limit=limit)}
+retriever = vector_store.build_vector_store(posts)
+question = input("Query")
+doc_txt = retriever.invoke(question)[0].page_content
+if guardrail_checker.apply_guardrail(question)["action"] != "GUARDRAIL_INTERVENED":
+    print(opinion_quantifier.quantify_opinion(question, doc_txt))
