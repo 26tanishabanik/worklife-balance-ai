@@ -1,23 +1,8 @@
-import os
-import json
-import logging
-import praw
-import boto3
-import unittest
-import pandas as pd
-import datapane as dp
-from datetime import datetime
-from unittest.mock import MagicMock, patch
-from botocore.exceptions import ClientError
 from src.monitoring import Monitoring
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.docstore.document import Document
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import BedrockEmbeddings
-from chromadb import EmbeddingFunction, Embeddings
 from langchain.prompts import PromptTemplate
 from langchain_aws import ChatBedrock
 from langchain_core.output_parsers import JsonOutputParser
+import logging
 
 # -----------------------------------------------------------------------------
 # Logging Configuration
@@ -25,8 +10,11 @@ from langchain_core.output_parsers import JsonOutputParser
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class GuardrailChecker:
-    def __init__(self, bedrock_client, monitoring: Monitoring, guardrail_id, guardrail_version):
+    def __init__(
+        self, bedrock_client, monitoring: Monitoring, guardrail_id, guardrail_version
+    ):
         self.bedrock_client = bedrock_client
         self.monitoring = monitoring
         self.guardrail_id = guardrail_id
@@ -39,24 +27,25 @@ class GuardrailChecker:
             response = self.bedrock_client.apply_guardrail(
                 guardrailIdentifier=self.guardrail_id,
                 guardrailVersion=self.guardrail_version,
-                source='INPUT',
-                content=content
+                source="INPUT",
+                content=content,
             )
             action = response.get("action", "UNKNOWN")
-            self.monitoring.log_metric("Guardrail Interventions", 1 if action == "GUARDRAIL_INTERVENED" else 0)
+            self.monitoring.log_metric(
+                "Guardrail Interventions", 1 if action == "GUARDRAIL_INTERVENED" else 0
+            )
             return response
         except Exception as e:
             logger.error("Guardrail check failed: %s", e)
             raise
+
 
 class OpinionQuantifier:
     def __init__(self, bedrock_client, monitoring: Monitoring, model_id):
         self.bedrock_client = bedrock_client
         self.monitoring = monitoring
         self.llm = ChatBedrock(
-            client=bedrock_client,
-            model_id=model_id,
-            model_kwargs={"temperature": 0.0}
+            client=bedrock_client, model_id=model_id, model_kwargs={"temperature": 0.0}
         )
 
     def quantify_opinion(self, question: str, doc_txt: str) -> dict:
@@ -73,7 +62,8 @@ Discussion:
 Reference:
 {doc_txt}
 
-Output JSON format with keys: support_level, balance_score, stress_impact, personal_time.
+Output JSON format with keys: support_level,
+balance_score, stress_impact, personal_time.
 """
         formatted_prompt = f"""
 <|begin_of_text|><|start_header_id|>user<|end_header_id|>
@@ -82,10 +72,8 @@ Output JSON format with keys: support_level, balance_score, stress_impact, perso
 <|start_header_id|>assistant<|end_header_id|>
 """
         final = PromptTemplate(
-            input_variables=["question", "document"],
-            template=formatted_prompt
+            input_variables=["question", "document"], template=formatted_prompt
         )
 
         retrieval_grader = final | self.llm | JsonOutputParser()
         return retrieval_grader.invoke({"question": question, "document": doc_txt})
-
